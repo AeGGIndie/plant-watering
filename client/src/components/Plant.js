@@ -14,7 +14,8 @@ const Plant = ({ data }) => {
   const [progress, setProgress] = useState(0);
 
   const toggle = () => {
-    if (!isActive == false) {
+    if (!isActive === false) {
+      setProgress(0);
       setSeconds(0);
     }
     setIsActive(!isActive);
@@ -26,24 +27,6 @@ const Plant = ({ data }) => {
     }
     setOpen(false);
     setProgress(0);
-  };
-
-  const waterAction = async () => {
-    const response = await axios.put(`http://localhost:8008/plants/${data.id}`);
-    if (!response || !response.data) {
-      /* TODO: Create another snackbar to notify the user of an error */
-    }
-    /* Clear all states related to timer and snackbars */
-    console.log("clearing...");
-    setIsActive(false);
-    setSeconds(0);
-    setOpen(true);
-    setTimeout(() => {
-      setProgress(0);
-    }, 1000);
-    setTimeout(() => {
-      setDisabled(false);
-    }, 5 * 1000);
   };
 
   useEffect(() => {
@@ -59,7 +42,27 @@ const Plant = ({ data }) => {
       clearInterval(interval);
     }
 
-    console.log(`${data.id} - timer:`, seconds);
+    const waterAction = async () => {
+      const response = await axios.put(
+        `http://localhost:8008/plants/${data.id}`
+      );
+      if (!response || !response.data) {
+        /* TODO: Create another snackbar to notify the user of an error */
+      }
+      /* Clear all states related to timer and snackbars */
+      console.log("clearing...");
+      setIsActive(false);
+      setSeconds(0);
+      setOpen(true);
+      setTimeout(() => {
+        setProgress(0);
+      }, 1000);
+      setTimeout(() => {
+        setDisabled(false);
+      }, 5 * 1000);
+    };
+
+    // console.log(`${data.id} - timer:`, seconds);
 
     /* Check the time accumulated */
     if (seconds === COOLDOWN) {
@@ -70,7 +73,7 @@ const Plant = ({ data }) => {
     }
 
     return () => clearInterval(interval);
-  }, [isActive, seconds]);
+  }, [isActive, seconds, data]);
 
   return (
     <Grid
