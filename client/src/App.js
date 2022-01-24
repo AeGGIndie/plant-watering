@@ -1,9 +1,22 @@
-import { Grid, Box } from "@mui/material";
-
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Grid } from "@mui/material";
 import Plant from "./components/Plant";
-import officePlants from "./officePlants";
 
 const App = () => {
+  const [officePlants, setPlants] = useState([]);
+  useEffect(() => {
+    const retrievePlants = async () => {
+      const response = await axios.get("http://localhost:8008/plants");
+      console.log(response);
+      if (!response || !response.data) {
+        setPlants(null);
+      }
+      setPlants(response.data);
+    };
+    retrievePlants();
+  }, []);
+
   return (
     <Grid container>
       <Grid item xs={2} />
@@ -25,9 +38,8 @@ const App = () => {
           padding: "2rem",
         }}
       >
-        {officePlants.map((plant) => (
-          <Plant key={plant.id} data={plant} />
-        ))}
+        {officePlants &&
+          officePlants.map((plant) => <Plant key={plant.id} data={plant} />)}
       </Grid>
       <Grid item xs={2} />
     </Grid>

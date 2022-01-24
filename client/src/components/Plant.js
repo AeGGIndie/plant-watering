@@ -1,7 +1,8 @@
-import { Paper, Grid, Alert, Snackbar } from "@mui/material";
+import { Paper, Grid, Alert, Snackbar, Badge } from "@mui/material";
 import LinearProgressWithLabel from "./LinearProgressWithLabel";
 import AlertSnackbar from "./AlertSnackbar";
 import { useEffect, useState } from "react";
+import axios from "axios";
 
 const COOLDOWN = 10;
 
@@ -13,6 +14,9 @@ const Plant = ({ data }) => {
   const [progress, setProgress] = useState(0);
 
   const toggle = () => {
+    if (!isActive == false) {
+      setSeconds(0);
+    }
     setIsActive(!isActive);
   };
 
@@ -21,13 +25,31 @@ const Plant = ({ data }) => {
       return;
     }
     setOpen(false);
+    setProgress(0);
+  };
+
+  const waterAction = async () => {
+    const response = await axios.put(`http://localhost:8008/plants/${data.id}`);
+    if (!response || !response.data) {
+      /* TODO: Create another snackbar to notify the user of an error */
+    }
+    /* Clear all states related to timer and snackbars */
+    console.log("clearing...");
+    setIsActive(false);
+    setSeconds(0);
+    setOpen(true);
+    setTimeout(() => {
+      setProgress(0);
+    }, 1000);
+    setTimeout(() => {
+      setDisabled(false);
+    }, 5 * 1000);
   };
 
   useEffect(() => {
     /* Turn on the timer when button is pressed */
     let interval = null;
     if (isActive) {
-      setDisabled(true);
       interval = setInterval(() => {
         setSeconds((seconds) => seconds + 1);
         setProgress(((seconds + 1) / COOLDOWN) * 100);
@@ -37,23 +59,14 @@ const Plant = ({ data }) => {
       clearInterval(interval);
     }
 
-    console.log("timer:", seconds);
+    console.log(`${data.id} - timer:`, seconds);
 
     /* Check the time accumulated */
     if (seconds === COOLDOWN) {
-      /* TODO: TURN EVERYTHING HERE INTO ONE FUNCTION */
-
-      console.log("clearing...");
+      /* Make HTTP Request to .NET API and clear/set states */
+      setDisabled(true);
       clearInterval(interval);
-      setIsActive(false);
-      setSeconds(0);
-      setDisabled(false);
-      setOpen(true);
-      setTimeout(() => {
-        setProgress(0);
-      }, 1000);
-
-      /* Make HTTP Request to .NET API */
+      waterAction();
     }
 
     return () => clearInterval(interval);
@@ -75,14 +88,20 @@ const Plant = ({ data }) => {
           margin: "0.2em",
         }}
       >
-        <img src={"plant.png"} alt="plant" />
+        <Badge badgeContent={data.id} color="primary">
+          <img src={"plant.png"} alt="plant" />
+        </Badge>
       </Paper>
-      <Snackbar open={open} autoHideDuration={3000} onClose={handleClose}>
+      <Snackbar open={open} autoHideDuration={2000} onClose={handleClose}>
         <Alert onClose={handleClose} severity="success" sx={{ width: "100%" }}>
           Successfully watered!
         </Alert>
       </Snackbar>
-      <AlertSnackbar buttonState={disabled} toggleState={toggle} />
+      <AlertSnackbar
+        disableButton={disabled}
+        buttonState={isActive}
+        toggleState={toggle}
+      />
       <LinearProgressWithLabel value={progress} />
     </Grid>
   );

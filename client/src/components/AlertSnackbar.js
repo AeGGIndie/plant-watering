@@ -4,12 +4,14 @@ import Snackbar from "@mui/material/Snackbar";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 
-const AlertSnackbar = ({ buttonState, toggleState }) => {
+const AlertSnackbar = ({ disableButton, buttonState, toggleState }) => {
   const [open, setOpen] = useState(false);
 
   const handleOpen = () => {
     toggleState();
-    setOpen(true);
+    if (!buttonState) {
+      setOpen(true);
+    }
   };
 
   const handleClose = (event, reason) => {
@@ -32,8 +34,8 @@ const AlertSnackbar = ({ buttonState, toggleState }) => {
 
   return (
     <>
-      <Button disabled={buttonState} variant="contained" onClick={handleOpen}>
-        Water Me!
+      <Button disabled={disableButton} variant="contained" onClick={handleOpen}>
+        {buttonState ? "Stop" : "Water Me!"}
       </Button>
       <Snackbar
         open={open}

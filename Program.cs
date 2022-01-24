@@ -1,16 +1,29 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+const string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
 /* Injections */
 var connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"];
+var PORT = builder.Configuration["PORT"];
+
+builder.Services.AddCors(options =>
+{
+  options.AddPolicy(name: MyAllowSpecificOrigins,
+                    builder =>
+                    {
+                      builder.WithOrigins("http://localhost:3000")
+                      .AllowAnyMethod();
+                    });
+});
 
 builder.Services.AddDbContext<ApiDbContext>(options =>
   options.UseSqlite(connectionString));
 
 // builder.Services.AddSingleton<PlantRepository>();
 var app = builder.Build();
+app.UseCors(MyAllowSpecificOrigins);
 
 app.MapGet("/plants", async (ApiDbContext db) =>
 {
@@ -21,6 +34,28 @@ app.MapGet("/plants/{id}", async (ApiDbContext db, int id) =>
 {
   var plant = await db.Plants.FirstOrDefaultAsync(p => p.Id == id);
   return plant == null ? Results.NotFound() : Results.Ok(plant);
+});
+
+app.MapGet("/remind", async (ApiDbContext db) =>
+{
+  var plants = await db.Plants.ToListAsync();
+  if (plants == null)
+  {
+    return Results.BadRequest();
+  }
+
+  DateTime current = DateTime.UtcNow;
+  var plantsExceeding = plants.Where(plant =>
+  {
+    TimeSpan interval = current - plant.LastWatered;
+    return (interval.TotalHours >= 6);
+  });
+  if (plantsExceeding == null)
+  {
+    return Results.BadRequest();
+  }
+
+  return Results.Ok(plantsExceeding);
 });
 
 app.MapPost("/plants", async (ApiDbContext db, int id) =>
@@ -63,7 +98,7 @@ app.MapDelete("/plants/{id}", async (ApiDbContext db, int id) =>
   await db.SaveChangesAsync();
   return Results.NoContent();
 });
-app.Run();
+app.Run($"http://localhost:{PORT}");
 
 
 class Plant
